@@ -32,7 +32,11 @@ class LLMNoResponseError(LLMResponseError):
 
 load_dotenv()
 
-app = Flask(__name__)
+# Get the absolute path to the templates directory
+template_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
+
+# Initialize Flask app with the correct template directory
+app = Flask(__name__, template_folder=template_dir)
 CORS(app, resources={r"/*": {"origins": [
     "https://bents-backend-server.vercel.app",
     "https://bents-next-ebon.vercel.app"
@@ -235,7 +239,6 @@ def upsert_transcript(transcript_text, metadata, index_name):
     transcript_vector_stores[index_name].add_documents(documents)
 
 @app.route('/')
-@app.route('/database')
 def serve_spa():
     return render_template('index.html')
 
