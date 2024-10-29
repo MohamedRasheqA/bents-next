@@ -16,18 +16,27 @@ export async function POST(request: Request) {
         headers: {
           'Content-Type': 'application/json',
         },
-        timeout: 30000 // 30 seconds timeout
+        timeout: 180000, // 3 minutes timeout
+        validateStatus: (status) => status < 500 // Only reject if status >= 500
       }
     );
+
+    if (response.data.error) {
+      return NextResponse.json({ error: response.data.error }, { status: 400 });
+    }
+
     return NextResponse.json(response.data);
   } catch (error: any) {
     console.error('Error in chat API route:', error.response?.data || error.message);
+    
+    // Return a more detailed error response
     return NextResponse.json(
       { 
         error: 'Failed to process chat request',
-        details: error.response?.data?.error || error.message 
+        message: error.response?.data?.message || error.message,
+        details: error.response?.data || 'No additional details available'
       },
-      { status: 500 }
+      { status: error.response?.status || 500 }
     );
   }
 }

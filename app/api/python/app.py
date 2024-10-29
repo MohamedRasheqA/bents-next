@@ -254,6 +254,10 @@ def chat():
 
         logging.debug(f"Chat history received: {chat_history}")
 
+        # Additional logging for debugging
+        logging.debug(f"User query: {user_query}")
+        logging.debug(f"Selected index: {selected_index}")
+
         # Initial input validation
         if not user_query or user_query in ['.', ',', '?', '!']:
             return jsonify({
@@ -386,8 +390,9 @@ def chat():
 
         return jsonify(response_data)
     except Exception as e:
-        logging.error(f"Error in chat route: {str(e)}", exc_info=True)
+        logging.debug(f"Response data: {response_data}")
         return jsonify({'error': 'An error occurred processing your request'}), 500
+        
 
 @app.route('/api/user/<user_id>', methods=['GET'])
 def get_user_data(user_id):

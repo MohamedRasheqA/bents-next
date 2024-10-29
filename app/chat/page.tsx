@@ -190,7 +190,6 @@ export default function ChatPage() {
 
 
 
-
   const handleSearch = async (
     e: React.FormEvent<HTMLFormElement> | React.MouseEvent, 
     initialQuestionIndex: number | null = null
@@ -208,16 +207,18 @@ export default function ChatPage() {
       const response = await axios.post('/api/chat', {
         message: query,
         selected_index: selectedIndex,
-        chat_history: currentConversation.map(conv => ({
-          question: conv.question,
-          answer: conv.initial_answer || conv.text
-        }))
+        chat_history: currentConversation.flatMap(conv => [
+          conv.question,
+          conv.initial_answer || conv.text
+        ])
+      }, {
+        timeout: 180000 // 3 minutes timeout
       });
-  
+
       if (response.data.error) {
         throw new Error(response.data.error);
       }
-  
+
       const newConversation: Conversation = {
         question: query,
         text: response.data.response,
@@ -226,16 +227,28 @@ export default function ChatPage() {
         videoLinks: response.data.video_links || {},
         timestamp: new Date().toISOString()
       };
-  
-      updateConversationAndSession(newConversation);
-      resetSearchState();
+
+      setCurrentConversation(prev => [...prev, newConversation]);
+      
+      // Update sessions
+      setSessions(prevSessions => 
+        prevSessions.map(session => 
+          session.id === currentSessionId 
+            ? { ...session, conversations: [...session.conversations, newConversation] }
+            : session
+        )
+      );
+
+      setShowInitialQuestions(false);
+      setSearchQuery("");
+      setShowCenterSearch(false);
+      
+      setTimeout(scrollToLatestConversation, 100);
     } catch (error: any) {
       console.error("Error fetching response:", error);
-      // Add user feedback for errors
-      const errorMessage = error.response?.data?.error || error.message || 'An error occurred';
       setCurrentConversation(prev => [...prev, {
         question: query,
-        text: `Error: ${errorMessage}`,
+        text: `Error: ${error.response?.data?.message || 'Failed to get response. Please try again.'}`,
         timestamp: new Date().toISOString()
       }]);
     } finally {
