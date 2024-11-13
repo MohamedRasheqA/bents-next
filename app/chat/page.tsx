@@ -35,13 +35,23 @@ interface Session {
 }
 
 // YouTube video ID extractor
-const getYoutubeVideoIds = (urls: string[]): string[] => {
-  if (!urls || urls.length === 0) return [];
+const getYoutubeVideoIds = (urls: any[]): string[] => {
+  if (!urls || !Array.isArray(urls)) return [];
+  
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-  return urls.map(url => {
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
-  }).filter((id): id is string => id !== null);
+  
+  return urls
+    .filter((url): url is string => typeof url === 'string' && url.length > 0)
+    .map(url => {
+      try {
+        const match = url.match(regExp);
+        return (match && match[2].length === 11) ? match[2] : null;
+      } catch (error) {
+        console.error('Error processing URL:', url, error);
+        return null;
+      }
+    })
+    .filter((id): id is string => id !== null);
 };
 
 export default function ChatPage() {
@@ -190,6 +200,7 @@ export default function ChatPage() {
 
 
 
+
   const handleSearch = async (
     e: React.FormEvent<HTMLFormElement> | React.MouseEvent, 
     initialQuestionIndex: number | null = null
@@ -204,21 +215,20 @@ export default function ChatPage() {
     setLoadingQuestionIndex(initialQuestionIndex);
   
     try {
-      const response = await axios.post('/api/chat', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
+      const response = await axios.post(`${apiUrl}/chat`, {
         message: query,
         selected_index: selectedIndex,
-        chat_history: currentConversation.flatMap(conv => [
-          conv.question,
-          conv.initial_answer || conv.text
-        ])
-      }, {
-       timeout: 300000, // 300 seconds (5 minutes) timeout
+        chat_history: currentConversation.map(conv => ({
+          question: conv.question,
+          answer: conv.initial_answer || conv.text
+        }))
       });
-
+  
       if (response.data.error) {
         throw new Error(response.data.error);
       }
-
+  
       const newConversation: Conversation = {
         question: query,
         text: response.data.response,
@@ -227,28 +237,16 @@ export default function ChatPage() {
         videoLinks: response.data.video_links || {},
         timestamp: new Date().toISOString()
       };
-
-      setCurrentConversation(prev => [...prev, newConversation]);
-      
-      // Update sessions
-      setSessions(prevSessions => 
-        prevSessions.map(session => 
-          session.id === currentSessionId 
-            ? { ...session, conversations: [...session.conversations, newConversation] }
-            : session
-        )
-      );
-
-      setShowInitialQuestions(false);
-      setSearchQuery("");
-      setShowCenterSearch(false);
-      
-      setTimeout(scrollToLatestConversation, 100);
+  
+      updateConversationAndSession(newConversation);
+      resetSearchState();
     } catch (error: any) {
       console.error("Error fetching response:", error);
+      // Add user feedback for errors
+      const errorMessage = error.response?.data?.error || error.message || 'An error occurred';
       setCurrentConversation(prev => [...prev, {
         question: query,
-        text: `Error: ${error.response?.data?.message || 'Failed to get response. Please try again.'}`,
+        text: `Error: ${errorMessage}`,
         timestamp: new Date().toISOString()
       }]);
     } finally {
