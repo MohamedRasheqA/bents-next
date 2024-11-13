@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
 
-const FLASK_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const FLASK_URL = 'https://bents-llm-server.vercel.app';
 
 export async function POST(request: Request) {
   try {
