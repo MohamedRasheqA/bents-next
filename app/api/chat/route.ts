@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import axios from 'axios';
 
 const FLASK_URL = 'https://bents-llm-server.vercel.app';
-
+export const maxDuration = 5; // This function can run for a maximum of 5 seconds
 export async function POST(request: Request) {
   try {
     const data = await request.json();
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
         headers: {
           'Content-Type': 'application/json',
         },
-        timeout: 180000, // 3 minutes timeout
+        timeout: 60000, // 60 seconds timeout
         validateStatus: (status) => status < 500 // Only reject if status >= 500
       }
     );
