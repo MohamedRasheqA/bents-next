@@ -16,7 +16,7 @@ export async function POST(request: Request) {
         headers: {
           'Content-Type': 'application/json',
         },
-        timeout: 60000, // 60 seconds timeout
+        timeout: 300000, // 300 seconds (5 minutes) timeout
         validateStatus: (status) => status < 500 // Only reject if status >= 500
       }
     );
