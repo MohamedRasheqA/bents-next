@@ -212,7 +212,7 @@ export default function ChatPage() {
           conv.initial_answer || conv.text
         ])
       }, {
-        timeout: 180000 // 3 minutes timeout
+        timeout: 60000, // 60 seconds timeout
       });
 
       if (response.data.error) {
